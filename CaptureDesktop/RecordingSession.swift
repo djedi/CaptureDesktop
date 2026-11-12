@@ -5,6 +5,8 @@ import Foundation
 struct RecordingOptions {
     var screen = true
     var camera = true
+    /// Unique ID of the camera to record; `nil` uses the system default.
+    var cameraID: String?
     var microphone = true
     var systemAudio = true
     var fps: Int32 = 30
@@ -117,7 +119,7 @@ final class RecordingSession {
                 deviceSource.onVideo = { [weak self] buffer, pts in self?.handleVideo(buffer, pts: pts, camera: true) }
                 deviceSource.onAudio = { [weak self] sample, pts in self?.handleAudio(sample, pts: pts, microphone: true) }
                 deviceSource.onError = { [weak self] error in self?.reportSourceError(error) }
-                try deviceSource.start(camera: options.camera, microphone: options.microphone, queue: queue)
+                try deviceSource.start(camera: options.camera, cameraID: options.cameraID, microphone: options.microphone, queue: queue)
             }
             try await waitForFirstFrames()
             try queue.sync { try beginWriting() }

@@ -101,6 +101,7 @@ final class MenuBarController: NSObject, NSWindowDelegate {
         let view = MenuView()
             .environmentObject(Recorder.shared)
             .environmentObject(CaptureSettings.shared)
+            .environmentObject(PreviewEngine.shared)
             .environment(\.colorScheme, .dark)
         let hosting = NSHostingView(rootView: view)
         // The panel follows the content's size (see `resize`), not the other way round.
@@ -126,6 +127,7 @@ struct MenuView: View {
 
     @EnvironmentObject private var recorder: Recorder
     @EnvironmentObject private var settings: CaptureSettings
+    @EnvironmentObject private var previews: PreviewEngine
     @AppStorage(SourcePrefs.screenKey) private var screen = true
     @AppStorage(SourcePrefs.cameraKey) private var camera = true
     @AppStorage(SourcePrefs.microphoneKey) private var microphone = true
@@ -144,6 +146,13 @@ struct MenuView: View {
                 }
                 rule
                 SourceRow(title: "Camera", symbol: "web.camera", tint: .green, isOn: $camera)
+                if camera, previews.offersCameraChoice {
+                    CameraPicker()
+                        .labelsHidden()
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, 40).padding(.trailing, 12).padding(.bottom, 10)
+                }
                 rule
                 SourceRow(title: "Microphone", symbol: "mic.fill", tint: Palette.microphone, isOn: $microphone)
                 rule
@@ -225,7 +234,9 @@ struct MenuView: View {
 
     private var canPress: Bool {
         switch recorder.state {
-        case .idle: return (screen || camera || microphone || systemAudio) && (!screen || settings.target != nil)
+        case .idle:
+            return (screen || camera || microphone || systemAudio) && (!screen || settings.target != nil)
+                && !(camera && previews.cameraIsMissing)
         case .countdown, .recording: return true
         case .starting, .stopping: return false
         }

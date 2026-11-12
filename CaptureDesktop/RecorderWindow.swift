@@ -84,10 +84,15 @@ struct RecorderView: View {
                     } footer: {
                         ScreenOptionsView()
                     }
-                    VideoCard(title: AVCaptureDevice.default(for: .video)?.localizedName ?? "Camera",
+                    VideoCard(title: previews.cameraName,
                               symbol: "web.camera", isOn: $camera, width: columnWidth) {
-                        CameraPreviewView(session: previews.devices.session, mirrored: mirrorCamera)
+                        if previews.cameraIsMissing {
+                            CardHint(symbol: "web.camera", text: "The chosen camera is not connected")
+                        } else {
+                            CameraPreviewView(session: previews.devices.session, mirrored: mirrorCamera)
+                        }
                     } footer: {
+                        CameraPicker()
                         Toggle("Mirror preview", isOn: $mirrorCamera)
                             .toggleStyle(.checkbox)
                             .help("Shows you as in a mirror. The recording itself is never mirrored.")
@@ -121,6 +126,7 @@ struct RecorderView: View {
 
     private var canRecord: Bool {
         recorder.state == .idle && (screen || camera || microphone || systemAudio) && (!screen || settings.target != nil)
+            && !(camera && previews.cameraIsMissing)
     }
 
     private var footer: some View {

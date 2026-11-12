@@ -85,7 +85,9 @@ final class Recorder: ObservableObject {
             let settings = CaptureSettings.shared
             let options = settings.makeOptions()
             let anySource = options.screen || options.camera || options.microphone || options.systemAudio
-            guard anySource, !options.screen || settings.target != nil else {
+            // A chosen camera that is unplugged would only fail after the countdown.
+            let cameraMissing = options.camera && options.cameraID != nil && (try? CameraChoice.resolve(options.cameraID)) == nil
+            guard anySource, !options.screen || settings.target != nil, !cameraMissing else {
                 // Nothing to record yet: show the window so the user can choose.
                 RecorderWindowController.shared.show()
                 return
@@ -170,6 +172,7 @@ final class CaptureSettings: ObservableObject {
         var options = RecordingOptions()
         options.screen = SourcePrefs.isOn(SourcePrefs.screenKey)
         options.camera = SourcePrefs.isOn(SourcePrefs.cameraKey)
+        options.cameraID = CameraChoice.selectedID
         options.microphone = SourcePrefs.isOn(SourcePrefs.microphoneKey)
         options.systemAudio = SourcePrefs.isOn(SourcePrefs.systemAudioKey)
         options.nativeResolution = SourcePrefs.isOn(SourcePrefs.nativeResolutionKey)
@@ -460,6 +463,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var options = RecordingOptions()
         options.screen = !args.contains("--no-screen")
         options.camera = !args.contains("--no-camera")
+        // The camera chosen in the app, so a scripted recording shows the same view.
+        options.cameraID = CameraChoice.selectedID
         options.microphone = !args.contains("--no-mic")
         options.systemAudio = !args.contains("--no-system-audio")
         if let scriptedFPS { options.fps = scriptedFPS }
