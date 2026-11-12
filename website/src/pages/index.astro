@@ -10,6 +10,7 @@ import menu from '../assets/screenshots/menu.png';
 import review from '../assets/screenshots/review.png';
 import hud from '../assets/screenshots/hud.png';
 import appIcon from '../assets/brand/app-icon.png';
+import socialImage from '../assets/social/capturedesktop-og.png';
 
 const REPO = 'https://github.com/djedi/CaptureDesktop';
 
@@ -47,7 +48,7 @@ const title = 'CaptureDesktop: a macOS screen recorder that hands off to DaVinci
 const description =
   'CaptureDesktop is a free, open-source screen recorder for macOS. It records screen, camera and audio as separate, synchronised files and builds a DaVinci Resolve project in one click.';
 const canonical = 'https://capturedesk.top/';
-const ogImage = await getImage({ src: recorder, width: 1200, format: 'png' });
+const ogImage = await getImage({ src: socialImage, width: 1200, height: 630, fit: 'cover', format: 'jpeg', quality: 90 });
 const ogImageUrl = new URL(ogImage.src, Astro.site).href;
 
 const featureImages = {
@@ -87,11 +88,15 @@ const tracks = [
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImageUrl} />
-    <meta property="og:image:alt" content="The CaptureDesktop recorder window." />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:alt" content="CaptureDesktop — Record beautifully. Keep every track. Abstract screen, camera and audio layers in teal and purple." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content="CaptureDesktop — Record beautifully. Keep every track. Abstract screen, camera and audio layers in teal and purple." />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
