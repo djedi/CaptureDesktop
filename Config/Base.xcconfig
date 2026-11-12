@@ -1,0 +1,7 @@
+// Signing defaults. Ad-hoc signing works, but macOS forgets the screen,
+// camera and microphone grants on every rebuild. Copy Local.xcconfig.example
+// to Local.xcconfig and set your own identity to keep them.
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"
