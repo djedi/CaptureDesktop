@@ -18,6 +18,6 @@ export const outputSizeNote =
 export const knownLimits: string[] = [
   'No built-in editor, by design. Editing happens in Resolve or another editor.',
   'The Resolve handoff needs DaVinci Resolve Studio. The free version does not allow external scripting.',
-  'No global keyboard shortcut yet.',
+  'The global shortcut is fixed at ⌥⇧⌘R; if another app already uses it, it does nothing.',
   'The selected area is not remembered between launches.',
 ];

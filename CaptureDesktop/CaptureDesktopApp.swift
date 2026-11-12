@@ -74,6 +74,29 @@ final class Recorder: ObservableObject {
         countdownCancelled = true
     }
 
+    /// The global shortcut: start (with the countdown), cancel the countdown, or stop.
+    func toggleFromShortcut() {
+        switch state {
+        case .recording:
+            Task { await stop() }
+        case .countdown:
+            cancelCountdown()
+        case .idle:
+            let settings = CaptureSettings.shared
+            let options = settings.makeOptions()
+            let anySource = options.screen || options.camera || options.microphone || options.systemAudio
+            guard anySource, !options.screen || settings.target != nil else {
+                // Nothing to record yet: show the window so the user can choose.
+                RecorderWindowController.shared.show()
+                return
+            }
+            MenuBarController.shared.close()
+            Task { await begin(options) }
+        case .starting, .stopping:
+            break
+        }
+    }
+
     @discardableResult
     func stop() async -> Bool {
         guard state == .recording, let session else { return false }
@@ -409,6 +432,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         guard let seconds = recordSeconds else {
+            GlobalHotKey.shared.install()
             RecorderWindowController.shared.show()
             // `--ui-test-seconds N` drives the real window flow: countdown, record N seconds, stop, quit.
             if let testSeconds = uiTestSeconds {

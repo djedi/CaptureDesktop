@@ -36,6 +36,7 @@ export const featureGroups: FeatureGroup[] = [
       'Live previews: screen thumbnail, camera picture (mirrored by default, with an option to turn mirroring off; the recording itself is never mirrored), and scrolling audio waveforms with dB readouts that turn red near clipping.',
       '3-second countdown that you can click to cancel.',
       'Floating timer with a Stop button. You can also stop from the menu bar or the Dock icon.',
+      'Global shortcut ⌥⇧⌘R, from any app: starts recording (after the countdown), cancels the countdown, or stops.',
       'Menu bar panel with source switches, capture mode, resolution, status and elapsed time.',
       'Quitting mid-recording finishes the files first, so nothing is left corrupt.',
     ],

@@ -15,6 +15,7 @@ It records the screen, camera, microphone and system audio as separate, synchron
 - **Camera cutout:** the camera can be rendered with its background removed, as a rectangle or a circle.
 - **DaVinci Resolve handoff:** one button creates a Resolve project with the screen, cursor effects and camera picture-in-picture on separate video tracks, and system audio and microphone on separate audio tracks.
 - **Menu bar control:** start and stop from the menu bar, a floating Stop button, or the Dock icon.
+- **Global shortcut:** press ⌥⇧⌘R in any app to start recording (after the countdown), cancel the countdown, or stop.
 
 ## Download
 
@@ -51,8 +52,8 @@ On first use macOS asks for Screen Recording, Camera and Microphone access. Scre
 ## Using it
 
 1. Choose the sources in the recorder window or the menu bar panel.
-2. Press **Start Recording**. Recording begins after a 3-second countdown.
-3. Stop with the floating Stop button, the menu bar panel or the Dock icon.
+2. Press **Start Recording**, or ⌥⇧⌘R from any app. Recording begins after a 3-second countdown.
+3. Stop with ⌥⇧⌘R, the floating Stop button, the menu bar panel or the Dock icon.
 4. In the review window, adjust the cursor effects and camera layout, then create a Resolve project or export the layers.
 
 ### Output
@@ -97,7 +98,7 @@ Unknown, repeated or conflicting options exit with status 2.
 
 - The Resolve handoff needs Resolve Studio and a system Python 3.
 - Area presets are centred on the screen, and the selected area is not remembered between launches.
-- There is no global keyboard shortcut for starting or stopping.
+- The global shortcut is fixed at ⌥⇧⌘R and cannot be changed; if another app already uses it, it does nothing.
 - System audio can start or end with up to about 20 ms of silence.
 - Long recordings and multi-display setups have had little testing.
 
