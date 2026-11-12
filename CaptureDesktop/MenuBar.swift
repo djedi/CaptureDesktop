@@ -261,6 +261,7 @@ struct MenuView: View {
         }
         .buttonStyle(.plain)
         .keyboardShortcut(.defaultAction)
+        .help("Shortcut from any app: \(GlobalHotKey.label)")
         .opacity(canPress ? 1 : 0.35)
         .disabled(!canPress)
     }
