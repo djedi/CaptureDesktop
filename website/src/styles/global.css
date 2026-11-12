@@ -93,6 +93,13 @@ code, pre { font-family: var(--mono); font-size: 0.88em; }
 .btn-primary:hover { background: #f25a5a; }
 .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
 .btn-secondary:hover { background: #262a33; }
+.brew { margin: 22px 0 0; font-size: 0.92rem; color: var(--text-3); }
+.brew code {
+  display: inline-block; margin-left: 6px; padding: 5px 12px; border-radius: 8px;
+  background: var(--well); color: #e6e8ee; user-select: all;
+  max-width: 100%; overflow-wrap: anywhere; margin-top: 6px;
+}
+.brew + .meta { margin-top: 12px; }
 .meta { margin-top: 20px; font-size: 0.9rem; color: var(--text-3); }
 
 /* Screenshots */

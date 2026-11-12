@@ -135,6 +135,11 @@ const tracks = [
               </>
             )}
           </div>
+          {release && (
+            <p class="brew">
+              Or install with Homebrew: <code>brew install --cask djedi/tap/capturedesktop</code>
+            </p>
+          )}
           <p class="meta">
             {release && <>Version {release.version} · </>}macOS 15 or later · Free and open source · GPL-3.0
           </p>
@@ -293,7 +298,8 @@ const tracks = [
           <h2>Build from source</h2>
           {release ? (
             <p>
-              Most people can just <a href={release.url}>download the app</a>. To build it yourself with Xcode:
+              Most people can just <a href={release.url}>download the app</a> or install it with Homebrew
+              (<code>brew install --cask djedi/tap/capturedesktop</code>). To build it yourself with Xcode:
             </p>
           ) : (
             <p>There is no prebuilt download yet. Build it with Xcode:</p>
