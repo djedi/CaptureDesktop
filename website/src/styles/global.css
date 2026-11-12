@@ -63,7 +63,7 @@ code, pre { font-family: var(--mono); font-size: 0.88em; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 600; }
 .brand img { width: 32px; height: 32px; }
 .brand:hover { text-decoration: none; }
-.nav ul { display: flex; flex-wrap: wrap; gap: 4px 20px; list-style: none; margin: 0; padding: 0; }
+.nav ul { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; list-style: none; margin: 0; padding: 0; }
 .nav ul a { color: var(--text-2); font-size: 0.93rem; }
 .nav ul a:hover { color: var(--text); text-decoration: none; }
 .nav .nav-gh { color: var(--text); }
@@ -205,3 +205,21 @@ td { color: var(--text-2); }
 .footer { border-top: 1px solid var(--border); padding: 40px 0 56px; margin-top: 40px; font-size: 0.9rem; }
 .footer p { color: var(--text-3); }
 .tm { font-size: 0.82rem; }
+
+/* Icons (Tabler, inlined by src/components/Icon.astro) */
+.icon { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.with-icon { display: inline-flex; align-items: center; gap: 0.45em; }
+h3.with-icon { display: flex; }
+.btn { gap: 0.5em; }
+.tint-red { color: var(--red); }
+.tint-teal { color: var(--teal); }
+.tint-purple { color: var(--purple); }
+.group-icon { color: var(--teal); }
+.fg-resolve .group-icon { color: var(--red); }
+.fg-cursor .group-icon { color: var(--amber); }
+.fg-camera .group-icon { color: var(--purple); }
+.facts li { display: inline-flex; align-items: center; gap: 8px; }
+.facts .icon { color: var(--text-3); }
+.callout { position: relative; }
+.callout-icon { color: var(--red); vertical-align: -4px; margin-right: 4px; }
+.footer .with-icon { vertical-align: bottom; }

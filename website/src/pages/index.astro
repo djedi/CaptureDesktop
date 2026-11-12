@@ -1,6 +1,7 @@
 ---
 import { Image, getImage } from 'astro:assets';
 import '../styles/global.css';
+import Icon from '../components/Icon.astro';
 import { featureGroups } from '../data/features';
 import { outputFiles, outputFolder, outputSizeNote, knownLimits } from '../data/outputs';
 
@@ -11,6 +12,37 @@ import hud from '../assets/screenshots/hud.png';
 import appIcon from '../assets/brand/app-icon.png';
 
 const REPO = 'https://github.com/djedi/CaptureDesktop';
+
+// The latest published release, looked up while the site builds. The release
+// workflow rebuilds the site after publishing, so this stays current. With no
+// release (or no network) the page falls back to build-from-source only.
+const RELEASE_ASSET = 'CaptureDesktop.zip';
+let release: { version: string; url: string } | null = null;
+try {
+  const token = process.env.GITHUB_TOKEN;
+  const response = await fetch('https://api.github.com/repos/djedi/CaptureDesktop/releases/latest', {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'capturedesk-site',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.ok) {
+    const latest = await response.json();
+    if (Array.isArray(latest.assets) && latest.assets.some(
+      (asset: { name: string; state: string; size: number }) =>
+        asset.name === RELEASE_ASSET && asset.state === 'uploaded' && asset.size > 0,
+    )) {
+      release = {
+        version: String(latest.tag_name).replace(/^v/, ''),
+        url: `${REPO}/releases/latest/download/${RELEASE_ASSET}`,
+      };
+    }
+  }
+} catch {
+  // Offline or rate-limited: build without the download button.
+}
 const title = 'CaptureDesktop: a macOS screen recorder that hands off to DaVinci Resolve';
 const description =
   'CaptureDesktop is a free, open-source screen recorder for macOS. It records screen, camera and audio as separate, synchronised files and builds a DaVinci Resolve project in one click.';
@@ -75,7 +107,7 @@ const tracks = [
             <li><a href="#how-it-works">How it works</a></li>
             <li><a href="#resolve">Resolve</a></li>
             <li><a href="#open-source">Open source</a></li>
-            <li><a class="nav-gh" href={REPO}>GitHub</a></li>
+            <li><a class="nav-gh with-icon" href={REPO}><Icon name="brand-github" size={18} />GitHub</a></li>
           </ul>
         </nav>
       </div>
@@ -91,10 +123,21 @@ const tracks = [
             as a ready-made Resolve project. It is a recorder, not an editor.
           </p>
           <div class="ctas">
-            <a class="btn btn-primary" href={REPO}>View on GitHub</a>
-            <a class="btn btn-secondary" href="#build">Build from source</a>
+            {release ? (
+              <>
+                <a class="btn btn-primary" href={release.url}><Icon name="download" />Download for macOS</a>
+                <a class="btn btn-secondary" href={REPO}><Icon name="brand-github" />View on GitHub</a>
+              </>
+            ) : (
+              <>
+                <a class="btn btn-primary" href={REPO}><Icon name="brand-github" />View on GitHub</a>
+                <a class="btn btn-secondary" href="#build"><Icon name="hammer" />Build from source</a>
+              </>
+            )}
           </div>
-          <p class="meta">macOS 15 or later · Free and open source · GPL-3.0</p>
+          <p class="meta">
+            {release && <>Version {release.version} · </>}macOS 15 or later · Free and open source · GPL-3.0
+          </p>
         </div>
         <div class="wrap">
           <figure class="shot shot-hero">
@@ -116,17 +159,17 @@ const tracks = [
           <ol class="steps">
             <li class="card step">
               <span class="step-num" aria-hidden="true">1</span>
-              <h3>Record</h3>
+              <h3 class="with-icon"><Icon name="player-record" class="tint-red" />Record</h3>
               <p>Choose a display, a window or an area, switch camera, microphone and system audio on or off, and start. A 3-second countdown gives you time to get ready.</p>
             </li>
             <li class="card step">
               <span class="step-num" aria-hidden="true">2</span>
-              <h3>Review</h3>
+              <h3 class="with-icon"><Icon name="adjustments-horizontal" class="tint-teal" />Review</h3>
               <p>Play the recording back, set the cursor highlight and click ripples, and choose the camera shape, size and corner.</p>
             </li>
             <li class="card step">
               <span class="step-num" aria-hidden="true">3</span>
-              <h3>Edit</h3>
+              <h3 class="with-icon"><Icon name="movie" class="tint-purple" />Edit</h3>
               <p>One click builds a DaVinci Resolve project with every layer in place. Or export the layers and use any editor.</p>
             </li>
           </ol>
@@ -149,6 +192,7 @@ const tracks = [
             {featureGroups.map((group) => (
               <article class={`card feature-group fg-${group.id}`} id={`feature-${group.id}`}>
                 <h3>
+                  <Icon name={group.icon} class="group-icon" size={22} />
                   {group.title}
                   {group.note && <span class="badge">{group.note}</span>}
                 </h3>
@@ -183,6 +227,7 @@ const tracks = [
               own track, all starting at the same frame.
             </p>
             <p class="callout">
+              <Icon name="info-circle" class="callout-icon" />
               Needs <strong>DaVinci Resolve Studio</strong>. The free version of Resolve does not allow external
               scripting. Without Studio, export the layers as ProRes 4444 and use any editor that supports alpha.
             </p>
@@ -228,16 +273,16 @@ const tracks = [
           <h2>Open source</h2>
           <div class="card os-card">
             <ul class="facts">
-              <li><strong>GPL-3.0</strong> licence</li>
-              <li>Written in <strong>Swift</strong></li>
-              <li><strong>macOS</strong> only</li>
-              <li>No account</li>
-              <li>No subscription</li>
+              <li><Icon name="license" size={18} /><span><strong>GPL-3.0</strong> licence</span></li>
+              <li><Icon name="brand-swift" size={18} /><span>Written in <strong>Swift</strong></span></li>
+              <li><Icon name="brand-apple" size={18} /><span><strong>macOS</strong> only</span></li>
+              <li><Icon name="user-off" size={18} /><span>No account</span></li>
+              <li><Icon name="credit-card-off" size={18} /><span>No subscription</span></li>
             </ul>
             <p class="links">
-              <a href={REPO}>Repository</a>
-              <a href={`${REPO}/issues`}>Issues</a>
-              <a href={`${REPO}/blob/main/LICENSE`}>Licence</a>
+              <a class="with-icon" href={REPO}><Icon name="brand-github" size={18} />Repository</a>
+              <a class="with-icon" href={`${REPO}/issues`}><Icon name="bug" size={18} />Issues</a>
+              <a class="with-icon" href={`${REPO}/blob/main/LICENSE`}><Icon name="scale" size={18} />Licence</a>
             </p>
           </div>
         </div>
@@ -246,10 +291,16 @@ const tracks = [
       <section id="build" class="section">
         <div class="wrap">
           <h2>Build from source</h2>
-          <p>There is no prebuilt download. Build it with Xcode:</p>
+          {release ? (
+            <p>
+              Most people can just <a href={release.url}>download the app</a>. To build it yourself with Xcode:
+            </p>
+          ) : (
+            <p>There is no prebuilt download yet. Build it with Xcode:</p>
+          )}
           <div class="build-grid">
             <div class="card">
-              <h3>Requirements</h3>
+              <h3 class="with-icon"><Icon name="list-check" />Requirements</h3>
               <ul>
                 <li>macOS 15 or later</li>
                 <li>Xcode</li>
@@ -261,7 +312,7 @@ const tracks = [
               <pre><code>{buildCommands}</code></pre>
             </div>
           </div>
-          <p class="note">On first use, macOS asks for Screen Recording, Camera and Microphone permission.</p>
+          <p class="note with-icon"><Icon name="shield-lock" size={18} />On first use, macOS asks for Screen Recording, Camera and Microphone permission.</p>
         </div>
       </section>
 
@@ -278,7 +329,7 @@ const tracks = [
     <footer class="footer">
       <div class="wrap">
         <p>
-          <a href={REPO}>CaptureDesktop on GitHub</a> ·
+          <a class="with-icon" href={REPO}><Icon name="brand-github" size={16} />CaptureDesktop on GitHub</a> ·
           <a href={`${REPO}/blob/main/LICENSE`}>GPL-3.0 licence</a>
         </p>
         <p class="tm">

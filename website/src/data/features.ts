@@ -3,6 +3,8 @@
 
 export interface FeatureGroup {
   id: string;
+  /** Tabler icon name (https://tabler.io/icons) shown next to the title. */
+  icon: string;
   title: string;
   /** Optional short note shown next to the group title. */
   note?: string;
@@ -12,6 +14,7 @@ export interface FeatureGroup {
 export const featureGroups: FeatureGroup[] = [
   {
     id: 'recording',
+    icon: 'device-desktop',
     title: 'Recording',
     items: [
       'Record a whole display (choose which one when several are connected), a single window, or a selected area.',
@@ -27,6 +30,7 @@ export const featureGroups: FeatureGroup[] = [
   },
   {
     id: 'during',
+    icon: 'clock-record',
     title: 'Before and during recording',
     items: [
       'Live previews: screen thumbnail, camera picture (mirrored by default, with an option to turn mirroring off; the recording itself is never mirrored), and scrolling audio waveforms with dB readouts that turn red near clipping.',
@@ -38,6 +42,7 @@ export const featureGroups: FeatureGroup[] = [
   },
   {
     id: 'cursor',
+    icon: 'pointer',
     title: 'Cursor effects',
     items: [
       "The pointer's position and every click are logged during recording (120 times a second).",
@@ -48,6 +53,7 @@ export const featureGroups: FeatureGroup[] = [
   },
   {
     id: 'camera',
+    icon: 'camera',
     title: 'Camera',
     items: [
       'Background removal, done on-device.',
@@ -58,6 +64,7 @@ export const featureGroups: FeatureGroup[] = [
   },
   {
     id: 'resolve',
+    icon: 'movie',
     title: 'DaVinci Resolve handoff',
     note: 'Needs DaVinci Resolve Studio',
     items: [
@@ -68,6 +75,7 @@ export const featureGroups: FeatureGroup[] = [
   },
   {
     id: 'other-editors',
+    icon: 'file-export',
     title: 'Any other editor',
     items: [
       'Export the cursor effects layer and the camera cutout as ProRes 4444 video with transparency, usable in any editor that supports alpha.',
@@ -75,6 +83,7 @@ export const featureGroups: FeatureGroup[] = [
   },
   {
     id: 'automation',
+    icon: 'terminal-2',
     title: 'Automation',
     items: [
       'Command-line options for scripted recordings: duration, frame rate (1–120), output folder, area, window by app name, source switches, plus rendering layers and creating a Resolve project for an existing recording.',

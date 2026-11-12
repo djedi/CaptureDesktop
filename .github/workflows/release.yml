@@ -1,0 +1,51 @@
+name: Release app
+
+# Builds, signs, notarizes and publishes the app whenever app code lands on main.
+# Never add a pull_request trigger: this runs on a private machine that holds
+# the signing key.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CaptureDesktop/**'
+      - 'Config/**'
+      - 'project.yml'
+      - 'scripts/release.sh'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    if: github.repository == 'djedi/CaptureDesktop' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, capturedesktop]
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      # Lets the release start the website rebuild, so the site shows the new version.
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Toolchain PATH
+        run: |
+          echo /opt/homebrew/bin >> "$GITHUB_PATH"
+          echo /usr/local/bin >> "$GITHUB_PATH"
+
+      - name: Build, sign, notarize and publish
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/release.sh

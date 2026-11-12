@@ -17,8 +17,8 @@ targets:
       path: CaptureDesktop/Info.plist
       properties:
         CFBundleDisplayName: CaptureDesktop
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSCameraUsageDescription: CaptureDesktop records your camera when the Camera source is turned on.
         NSMicrophoneUsageDescription: CaptureDesktop records your microphone when the Microphone source is turned on.
     entitlements:
@@ -30,6 +30,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: top.capturedesk.CaptureDesk
         PRODUCT_NAME: CaptureDesktop
+        # Local builds use these. Releases keep the major.minor from MARKETING_VERSION
+        # and replace the rest with the commit count (see scripts/release.sh).
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Manual

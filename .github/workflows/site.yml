@@ -1,0 +1,73 @@
+name: Publish website
+
+# Rebuilds and publishes the website whenever it changes on main.
+# Never add a pull_request trigger: this runs on a private machine that holds
+# the deploy key.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'scripts/deploy-site.sh'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish
+    if: github.repository == 'djedi/CaptureDesktop' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, capturedesktop]
+    timeout-minutes: 20
+    steps:
+      # Always publish the tip of main, not the commit that queued this run: queued
+      # runs are not guaranteed to start in order, and an older one must not
+      # overwrite a newer site.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Toolchain PATH
+        run: |
+          echo /opt/homebrew/opt/node@24/bin >> "$GITHUB_PATH"
+          echo /opt/homebrew/bin >> "$GITHUB_PATH"
+
+      - name: Install SSH deploy key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.SITE_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.SITE_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          [[ -n "$DEPLOY_SSH_KEY" && -n "$DEPLOY_KNOWN_HOSTS" ]] || { echo 'Deploy secrets are not set.' >&2; exit 1; }
+          ssh_dir="$RUNNER_TEMP/deploy-ssh"
+          rm -rf "$ssh_dir"
+          mkdir -m 700 -p "$ssh_dir/bin"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$ssh_dir/key"
+          chmod 600 "$ssh_dir/key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          # Wrapper so rsync uses only this key and the pinned host key, without
+          # touching the runner account's own ~/.ssh.
+          cat > "$ssh_dir/bin/ssh" <<EOF
+          #!/bin/sh
+          exec /usr/bin/ssh -i "$ssh_dir/key" -o IdentitiesOnly=yes -o IdentityAgent=none \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" -o StrictHostKeyChecking=yes -o BatchMode=yes "\$@"
+          EOF
+          chmod 700 "$ssh_dir/bin/ssh"
+          echo "$ssh_dir/bin" >> "$GITHUB_PATH"
+
+      - name: Build and publish
+        env:
+          DEPLOY_TARGET: ${{ secrets.SITE_DEPLOY_TARGET }}
+          # Read-only token for looking up the latest release while building.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/deploy-site.sh
+
+      - name: Remove SSH deploy key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/deploy-ssh"

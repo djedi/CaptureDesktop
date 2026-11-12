@@ -1,0 +1,28 @@
+---
+// Inlines a Tabler icon (MIT, https://tabler.io/icons) as SVG at build time.
+// No client JavaScript and no icon font: only the icons used end up in the page.
+import tabler from '@iconify-json/tabler/icons.json';
+
+interface Props {
+  name: string;
+  size?: number;
+  class?: string;
+  /** Accessible name. Leave out for decorative icons next to text. */
+  label?: string;
+}
+
+const { name, size = 20, class: className, label } = Astro.props;
+const icon = (tabler.icons as Record<string, { body: string }>)[name];
+if (!icon) throw new Error(`Unknown Tabler icon "${name}"`);
+---
+<svg
+  class:list={['icon', className]}
+  width={size}
+  height={size}
+  viewBox={`0 0 ${tabler.width ?? 24} ${tabler.height ?? 24}`}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  focusable="false"
+  set:html={icon.body}
+/>
