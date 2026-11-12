@@ -10,5 +10,8 @@
   },
   "dependencies": {
     "astro": "^7.4.11"
+  },
+  "devDependencies": {
+    "@iconify-json/tabler": "^1.2.45"
   }
 }

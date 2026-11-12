@@ -16,6 +16,10 @@ It records the screen, camera, microphone and system audio as separate, synchron
 - **DaVinci Resolve handoff:** one button creates a Resolve project with the screen, cursor effects and camera picture-in-picture on separate video tracks, and system audio and microphone on separate audio tracks.
 - **Menu bar control:** start and stop from the menu bar, a floating Stop button, or the Dock icon.
 
+## Download
+
+Get the latest signed and notarized build from the [releases page](https://github.com/djedi/CaptureDesktop/releases/latest): download `CaptureDesktop.zip`, unzip it and move CaptureDesktop to your Applications folder. To build it yourself, see below.
+
 ## Requirements
 
 - macOS 15 or later.
