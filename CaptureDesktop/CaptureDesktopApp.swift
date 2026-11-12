@@ -11,6 +11,8 @@ final class Recorder: ObservableObject {
     @Published private(set) var state: State = .idle
     @Published private(set) var message: String?
     @Published private(set) var lastFolder: URL?
+    /// When the current recording began, for the elapsed-time readouts.
+    @Published private(set) var recordingStarted: Date?
     private var session: RecordingSession?
     private var countdownCancelled = false
 
@@ -49,6 +51,7 @@ final class Recorder: ObservableObject {
         do {
             try await session.start()
             self.session = session
+            recordingStarted = Date()
             state = .recording
             if !Recorder.headless {
                 RecordingHUD.shared.show(on: CaptureSettings.shared.targetScreen) { [weak self] in
@@ -78,6 +81,7 @@ final class Recorder: ObservableObject {
         RecordingHUD.shared.hide()
         defer {
             self.session = nil
+            recordingStarted = nil
             state = .idle
         }
         do {
@@ -244,75 +248,6 @@ struct ScreenOptionsView: View {
     }
 }
 
-/// The menu bar popover: the place to stop a recording, plus quick controls.
-struct MenuView: View {
-    @EnvironmentObject private var recorder: Recorder
-    @EnvironmentObject private var settings: CaptureSettings
-    @AppStorage(SourcePrefs.screenKey) private var screen = true
-    @AppStorage(SourcePrefs.cameraKey) private var camera = true
-    @AppStorage(SourcePrefs.microphoneKey) private var microphone = true
-    @AppStorage(SourcePrefs.systemAudioKey) private var systemAudio = true
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Group {
-                Toggle("Screen", isOn: $screen)
-                if screen { ScreenOptionsView().padding(.leading, 8) }
-                Toggle("Camera", isOn: $camera)
-                Toggle("Microphone", isOn: $microphone)
-                Toggle("System Audio", isOn: $systemAudio)
-            }
-            .toggleStyle(.switch)
-            .disabled(recorder.state != .idle)
-
-            Button(action: toggleRecording) {
-                Text(buttonTitle).frame(maxWidth: .infinity)
-            }
-            .controlSize(.large)
-            .keyboardShortcut(.defaultAction)
-            .disabled(recorder.state == .starting || recorder.state == .stopping
-                      || !(screen || camera || microphone || systemAudio)
-                      || (screen && settings.target == nil))
-
-            if let message = recorder.message {
-                Text(message).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
-            }
-            if let folder = recorder.lastFolder, recorder.state == .idle {
-                Button("Show Last Recording") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
-            }
-            Divider()
-            Button("Open Recorder Window") { RecorderWindowController.shared.show() }
-                .disabled(recorder.state != .idle)
-            Button("Quit CaptureDesktop") { NSApp.terminate(nil) }
-                .disabled(recorder.state != .idle)
-        }
-        .padding(14)
-        .frame(width: 300)
-        .onChange(of: [screen, camera, microphone, systemAudio]) { _, _ in PreviewEngine.shared.refresh() }
-    }
-
-    private var buttonTitle: String {
-        switch recorder.state {
-        case .idle: return "Start Recording"
-        case .countdown(let number): return "Starting in \(number)… (click to cancel)"
-        case .starting: return "Starting…"
-        case .recording: return "Stop Recording"
-        case .stopping: return "Finishing…"
-        }
-    }
-
-    private func toggleRecording() {
-        Task {
-            switch recorder.state {
-            case .recording: await recorder.stop()
-            case .countdown: recorder.cancelCountdown()
-            case .idle: await recorder.begin(settings.makeOptions())
-            default: break
-            }
-        }
-    }
-}
-
 /// `--record-seconds N` records without the UI and quits, for scripted tests.
 /// Also: `--no-screen`, `--no-camera`, `--no-mic`, `--no-system-audio`,
 /// `--fps N`, `--output DIR`, `--area X,Y,W,H` (points on the main display),
@@ -349,6 +284,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MenuBarController.shared.install()
         let args = CommandLine.arguments
         func value(_ flag: String) -> String? {
             guard let index = args.firstIndex(of: flag), index + 1 < args.count else { return nil }
@@ -547,14 +483,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct CaptureDesktopApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @StateObject private var recorder = Recorder.shared
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuView().environmentObject(recorder).environmentObject(CaptureSettings.shared)
-        } label: {
-            Image(systemName: recorder.state == .recording ? "stop.circle.fill" : "record.circle")
-        }
-        .menuBarExtraStyle(.window)
+        // The menu bar icon and every window are AppKit-managed; this scene only
+        // gives the app its standard menus, without a Settings item.
+        Settings { EmptyView() }
+            .commands { CommandGroup(replacing: .appSettings) {} }
     }
 }

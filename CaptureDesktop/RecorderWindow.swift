@@ -48,7 +48,7 @@ final class RecorderWindowController: NSObject, NSWindowDelegate {
     }
 }
 
-private enum Palette {
+enum Palette {
     static let window = Color(red: 0.075, green: 0.082, blue: 0.102)
     static let card = Color(red: 0.118, green: 0.129, blue: 0.157)
     static let well = Color(red: 0.047, green: 0.051, blue: 0.067)
@@ -65,6 +65,7 @@ struct RecorderView: View {
     @AppStorage(SourcePrefs.cameraKey) private var camera = true
     @AppStorage(SourcePrefs.microphoneKey) private var microphone = true
     @AppStorage(SourcePrefs.systemAudioKey) private var systemAudio = true
+    @AppStorage(SourcePrefs.mirrorCameraKey) private var mirrorCamera = true
 
     private let columnWidth: CGFloat = 400
 
@@ -85,7 +86,11 @@ struct RecorderView: View {
                     }
                     VideoCard(title: AVCaptureDevice.default(for: .video)?.localizedName ?? "Camera",
                               symbol: "web.camera", isOn: $camera, width: columnWidth) {
-                        CameraPreviewView(session: previews.devices.session)
+                        CameraPreviewView(session: previews.devices.session, mirrored: mirrorCamera)
+                    } footer: {
+                        Toggle("Mirror preview", isOn: $mirrorCamera)
+                            .toggleStyle(.checkbox)
+                            .help("Shows you as in a mirror. The recording itself is never mirrored.")
                     }
                 }
             }

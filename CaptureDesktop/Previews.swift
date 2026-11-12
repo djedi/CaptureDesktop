@@ -8,6 +8,8 @@ enum SourcePrefs {
     static let screenKey = "source.screen", cameraKey = "source.camera"
     static let microphoneKey = "source.microphone", systemAudioKey = "source.systemAudio"
     static let nativeResolutionKey = "capture.nativeResolution"
+    /// Show the camera preview as a mirror image. The recording is never mirrored.
+    static let mirrorCameraKey = "camera.mirrorPreview"
 
     static func isOn(_ key: String) -> Bool {
         UserDefaults.standard.object(forKey: key) as? Bool ?? true
@@ -214,18 +216,49 @@ final class PreviewEngine: ObservableObject {
     }
 }
 
+/// The live camera picture, optionally flipped left to right like a mirror.
 struct CameraPreviewView: NSViewRepresentable {
     let session: AVCaptureSession
+    var mirrored = false
 
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        let layer = AVCaptureVideoPreviewLayer(session: session)
-        layer.videoGravity = .resizeAspectFill
-        layer.backgroundColor = NSColor.black.cgColor
-        view.layer = layer
-        view.wantsLayer = true
+    func makeNSView(context: Context) -> CameraPreviewNSView {
+        let view = CameraPreviewNSView(session: session)
+        view.mirrored = mirrored
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: CameraPreviewNSView, context: Context) {
+        nsView.mirrored = mirrored
+    }
+}
+
+final class CameraPreviewNSView: NSView {
+    private let preview: AVCaptureVideoPreviewLayer
+    var mirrored = false { didSet { if mirrored != oldValue { needsLayout = true } } }
+
+    init(session: AVCaptureSession) {
+        preview = AVCaptureVideoPreviewLayer(session: session)
+        super.init(frame: .zero)
+        preview.videoGravity = .resizeAspectFill
+        let backing = CALayer()
+        backing.backgroundColor = NSColor.black.cgColor
+        backing.masksToBounds = true
+        backing.addSublayer(preview)
+        layer = backing
+        wantsLayer = true
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    override func layout() {
+        super.layout()
+        // The flip is a transform on the layer, so it holds however the camera
+        // connection is rebuilt when sources are switched on and off.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        preview.transform = CATransform3DIdentity
+        preview.frame = bounds
+        preview.transform = mirrored ? CATransform3DMakeScale(-1, 1, 1) : CATransform3DIdentity
+        CATransaction.commit()
+    }
 }
