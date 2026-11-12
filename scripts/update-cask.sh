@@ -40,8 +40,7 @@ cask "capturedesktop" do
   version "$version"
   sha256 "$sum"
 
-  url "https://github.com/$REPO/releases/download/v#{version}/$ASSET",
-      verified: "github.com/$REPO/"
+  url "https://github.com/$REPO/releases/download/v#{version}/$ASSET"
   name "CaptureDesktop"
   desc "Screen recorder that hands its recordings to DaVinci Resolve Studio"
   homepage "https://capturedesk.top/"
