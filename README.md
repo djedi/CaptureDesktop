@@ -22,6 +22,14 @@ It records the screen, camera, microphone and system audio as separate, synchron
 
 Get the latest signed and notarized build from the [releases page](https://github.com/djedi/CaptureDesktop/releases/latest): download `CaptureDesktop.zip`, unzip it and move CaptureDesktop to your Applications folder. To build it yourself, see below.
 
+Or install it with [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask djedi/tap/capturedesktop
+```
+
+Update it later with `brew upgrade --cask capturedesktop`.
+
 ## Requirements
 
 - macOS 15 or later.

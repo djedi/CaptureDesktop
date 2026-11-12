@@ -11,6 +11,7 @@ on:
       - 'Config/**'
       - 'project.yml'
       - 'scripts/release.sh'
+      - 'scripts/update-cask.sh'
       - '.github/workflows/release.yml'
   workflow_dispatch:
 
@@ -48,4 +49,5 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           GH_TOKEN: ${{ github.token }}
+          HOMEBREW_TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
         run: ./scripts/release.sh

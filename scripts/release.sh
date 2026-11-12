@@ -8,6 +8,8 @@
 #                                  (or APP_STORE_CONNECT_API_KEY_PATH)
 #   APP_STORE_CONNECT_ISSUER_ID    App Store Connect issuer ID
 #   GH_TOKEN                       token allowed to create releases
+#   HOMEBREW_TAP_DEPLOY_KEY        private SSH key allowed to push to the Homebrew tap
+#                                  (without it the release is still published, then the run fails)
 # and a "Developer ID Application" certificate in the login keychain.
 #
 # DRY_RUN=1 builds and signs only: nothing is notarized or published.
@@ -18,10 +20,16 @@ fail() { echo "release: $*" >&2; exit 1; }
 
 DRY_RUN="${DRY_RUN:-0}"
 : "${APPLE_TEAM_ID:?Set APPLE_TEAM_ID}"
-# The website shows the latest version and its download link, read when it builds, so
-# every release (including a re-run that finds it already published) rebuilds the site.
-rebuild_site() {
-  gh workflow run site.yml --ref main || fail "the release is published, but the site rebuild could not be started: re-run this workflow or run Publish website"
+# Once a release is published, two things follow it: the website (it shows the latest
+# version and its download link, read when it builds) and the Homebrew cask. Both run
+# for every release, including a re-run that finds it already published, so a step
+# that failed last time is retried. Both are attempted before either failure is reported.
+after_publish() {
+  local failed=""
+  # The cask first: the site shows the Homebrew command.
+  ./scripts/update-cask.sh "$version" || failed="the Homebrew cask was not updated"
+  gh workflow run site.yml --ref main || failed="${failed:+$failed, and }the site rebuild could not be started"
+  [[ -z "$failed" ]] || fail "the release is published, but $failed: re-run this workflow"
 }
 
 ASSET="CaptureDesktop.zip"   # fixed name: the website links to releases/latest/download/CaptureDesktop.zip
@@ -45,7 +53,7 @@ if [[ "$DRY_RUN" != 1 ]]; then
   if state="$(gh release view "$tag" --json isDraft,assets --jq '[.isDraft, any(.assets[]; .name == "'"$ASSET"'" and .state == "uploaded" and .size > 0)] | @tsv' 2>/dev/null)"; then
     if [[ "$state" == $'false\ttrue' ]]; then
       echo "release: $tag is already published, nothing to build"
-      rebuild_site
+      after_publish
       exit 0
     fi
     echo "release: $tag exists but is incomplete, replacing it"
@@ -102,4 +110,4 @@ gh release create "$tag" "$out/$ASSET" --target "$(git rev-parse HEAD)" --title 
 
 SHA-256: \`$sum\`"
 echo "release: published $tag"
-rebuild_site
+after_publish
