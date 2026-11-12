@@ -57,6 +57,7 @@ export const featureGroups: FeatureGroup[] = [
     icon: 'camera',
     title: 'Camera',
     items: [
+      'Choose which camera to record when more than one is connected. If the chosen camera is unplugged, recording waits for you to reconnect it or pick another; it never switches cameras on its own.',
       'Background removal, done on-device.',
       'Rectangle or circle shape.',
       'Picture-in-picture size and corner (top or bottom, left or right).',

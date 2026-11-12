@@ -9,6 +9,7 @@ It records the screen, camera, microphone and system audio as separate, synchron
 ## Features
 
 - **Sources:** screen (a whole display, one window, or a selected area), camera, microphone and system audio, each with its own switch.
+- **Camera choice:** pick which camera to record when more than one is connected. A chosen camera that is unplugged is never silently replaced by another.
 - **Editing-friendly files:** constant frame rate HEVC video, 24-bit 48 kHz audio, and every file starting at the same instant so the layers line up on a timeline.
 - **Live previews:** screen thumbnail, camera picture (mirrored by default) and audio level waveforms before you record.
 - **Cursor effects:** the pointer's movements and clicks are logged during recording and can be rendered afterwards as a transparent highlight layer.
@@ -78,7 +79,7 @@ The app can be driven from the command line for scripted recordings and tests. L
 
 | Option | Effect |
 | --- | --- |
-| `--record-seconds N` | Record for N seconds without the UI, then quit |
+| `--record-seconds N` | Record for N seconds without the UI, then quit. Uses the camera chosen in the app |
 | `--fps N` | Frame rate, 1 to 120 |
 | `--output DIR` | Where to put the recording folder |
 | `--area X,Y,W,H` | Record an area of the main display, in points |

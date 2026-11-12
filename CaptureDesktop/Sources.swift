@@ -189,6 +189,47 @@ final class ScreenSource: NSObject, SCStreamOutput, SCStreamDelegate {
 
 /// Camera video and microphone audio from one AVCaptureSession.
 /// Timestamps are converted from the session clock to the host clock.
+/// The cameras that can be recorded, and which one the user chose.
+enum CameraChoice {
+    /// Saved unique ID of the chosen camera. Empty means "the system default".
+    static let idKey = "camera.deviceID"
+    /// Saved name of the chosen camera, so it can still be named after it is unplugged.
+    static let nameKey = "camera.deviceName"
+
+    static var selectedID: String? {
+        let id = UserDefaults.standard.string(forKey: idKey) ?? ""
+        return id.isEmpty ? nil : id
+    }
+
+    /// Connected cameras, built-in first. Desk View is left out: it is a second
+    /// view from a camera that is already listed.
+    static func connected() -> [AVCaptureDevice] {
+        AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera],
+                                         mediaType: .video, position: .unspecified).devices
+    }
+
+    /// The camera macOS prefers (the one the user last picked system-wide, or its
+    /// automatic choice), falling back to the first camera found.
+    static var systemDefault: AVCaptureDevice? {
+        AVCaptureDevice.systemPreferredCamera ?? AVCaptureDevice.default(for: .video)
+    }
+
+    /// The camera to use: the chosen one, or the system default when none was chosen.
+    /// A chosen camera that is not connected is an error. Another camera is never
+    /// used in its place, so a recording cannot show an unexpected view.
+    static func resolve(_ id: String?) throws -> AVCaptureDevice {
+        guard let id else {
+            guard let device = systemDefault else { throw RecorderError("No camera found") }
+            return device
+        }
+        guard let device = connected().first(where: { $0.uniqueID == id }) else {
+            let name = UserDefaults.standard.string(forKey: nameKey) ?? "The chosen camera"
+            throw RecorderError("\(name) is not connected. Connect it or choose another camera.")
+        }
+        return device
+    }
+}
+
 final class DeviceSource: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
     var onVideo: ((CVPixelBuffer, CMTime) -> Void)?
     var onAudio: ((CMSampleBuffer, CMTime) -> Void)?
@@ -201,10 +242,12 @@ final class DeviceSource: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
     private(set) var cameraName: String?
     private(set) var microphoneName: String?
 
-    func start(camera: Bool, microphone: Bool, queue: DispatchQueue) throws {
+    /// `cameraID` picks a camera by unique ID; `nil` uses the system default.
+    func start(camera: Bool, cameraID: String? = nil, microphone: Bool, queue: DispatchQueue) throws {
+        // Resolve the camera before touching the session, so a missing one changes nothing.
+        let cameraDevice = camera ? try CameraChoice.resolve(cameraID) : nil
         session.beginConfiguration()
-        if camera {
-            guard let device = AVCaptureDevice.default(for: .video) else { throw RecorderError("No camera found") }
+        if let device = cameraDevice {
             let input = try AVCaptureDeviceInput(device: device)
             guard session.canAddInput(input) else { throw RecorderError("Cannot use camera \(device.localizedName)") }
             session.addInput(input)

@@ -49,18 +49,27 @@ final class DevicePreview: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     let microphoneLevel = LevelBox()
     private let queue = DispatchQueue(label: "top.capturedesk.preview")
     private var camera = false, microphone = false
+    private var cameraID: String?
 
-    func configure(camera: Bool, microphone: Bool) {
+    /// `cameraID` picks the camera to show; `nil` shows the system default.
+    func configure(camera: Bool, cameraID: String?, microphone: Bool) {
         queue.async { [self] in
-            guard camera != self.camera || microphone != self.microphone || !session.isRunning else { return }
+            // The camera to show now. Compared with the one in use, not only with the
+            // settings: the chosen camera may have been plugged in or removed, or the
+            // system default may have changed, while the settings stayed the same.
+            let wanted = camera && AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+                ? try? CameraChoice.resolve(cameraID) : nil
+            let shown = session.inputs.compactMap { ($0 as? AVCaptureDeviceInput)?.device }.first { $0.hasMediaType(.video) }
+            guard camera != self.camera || cameraID != self.cameraID || microphone != self.microphone
+                    || wanted?.uniqueID != shown?.uniqueID || !session.isRunning else { return }
             self.camera = camera
+            self.cameraID = cameraID
             self.microphone = microphone
             if session.isRunning { session.stopRunning() }
             session.beginConfiguration()
             session.inputs.forEach(session.removeInput)
             session.outputs.forEach(session.removeOutput)
-            if camera, AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
-               let device = AVCaptureDevice.default(for: .video),
+            if let device = wanted,
                let input = try? AVCaptureDeviceInput(device: device), session.canAddInput(input) {
                 session.addInput(input)
             }
@@ -95,6 +104,26 @@ final class DevicePreview: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     }
 }
 
+/// Calls back when the system's preferred camera changes.
+private final class DefaultCameraWatcher: NSObject {
+    private static let keyPath = "systemPreferredCamera"
+    private let changed: () -> Void
+
+    init(changed: @escaping () -> Void) {
+        self.changed = changed
+        super.init()
+        AVCaptureDevice.self.addObserver(self, forKeyPath: Self.keyPath, options: [], context: nil)
+    }
+
+    deinit {
+        AVCaptureDevice.self.removeObserver(self, forKeyPath: Self.keyPath)
+    }
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+        changed()
+    }
+}
+
 /// Everything the recorder window shows before a recording starts.
 @MainActor
 final class PreviewEngine: ObservableObject {
@@ -106,6 +135,56 @@ final class PreviewEngine: ObservableObject {
     @Published private(set) var systemHistory = [Float](repeating: 0, count: PreviewEngine.historyLength)
     private static let historyLength = 96
     let devices = DevicePreview()
+    /// Connected cameras, kept current as cameras are plugged in and removed.
+    @Published private(set) var cameras: [CameraItem] = CameraItem.connected()
+    private var cameraWatchers: [NSObjectProtocol] = []
+
+    /// Unique ID of the chosen camera; empty means the system default. Saved with
+    /// the camera's name, so it can still be named after it is unplugged.
+    @Published var cameraID = UserDefaults.standard.string(forKey: CameraChoice.idKey) ?? "" {
+        didSet {
+            guard cameraID != oldValue else { return }
+            UserDefaults.standard.set(cameraID, forKey: CameraChoice.idKey)
+            UserDefaults.standard.set(cameras.first { $0.id == cameraID }?.name ?? "", forKey: CameraChoice.nameKey)
+            refresh()
+        }
+    }
+
+    /// A camera was chosen and is not connected now.
+    var cameraIsMissing: Bool { !cameraID.isEmpty && !cameras.contains { $0.id == cameraID } }
+
+    /// The camera picker is only worth showing when there is a choice to make, or
+    /// a chosen camera to go back to the system default from.
+    var offersCameraChoice: Bool { cameras.count > 1 || !cameraID.isEmpty }
+
+    /// Name of the camera that would be recorded, for titles.
+    var cameraName: String {
+        if let chosen = cameras.first(where: { $0.id == cameraID }) { return chosen.name }
+        if cameraIsMissing { return UserDefaults.standard.string(forKey: CameraChoice.nameKey).flatMap { $0.isEmpty ? nil : $0 } ?? "Camera" }
+        return CameraChoice.systemDefault?.localizedName ?? "Camera"
+    }
+
+    init() {
+        for name in [AVCaptureDevice.wasConnectedNotification, AVCaptureDevice.wasDisconnectedNotification] {
+            cameraWatchers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.camerasChanged() }
+            })
+        }
+        // The system default can change while every camera stays connected.
+        defaultWatcher = DefaultCameraWatcher { [weak self] in
+            Task { @MainActor in self?.camerasChanged() }
+        }
+    }
+
+    private var defaultWatcher: DefaultCameraWatcher?
+
+    /// A camera appeared or went, or the system default changed.
+    private func camerasChanged() {
+        // Assigning publishes, so the camera's name is drawn again even when the
+        // list itself is the same.
+        cameras = CameraItem.connected()
+        refresh()
+    }
 
     private var active = false
     private var thumbnailTask: Task<Void, Never>?
@@ -152,7 +231,7 @@ final class PreviewEngine: ObservableObject {
             }
             guard active else { return }
             // Read the switches again: they may have changed while a prompt was up.
-            devices.configure(camera: SourcePrefs.isOn(SourcePrefs.cameraKey),
+            devices.configure(camera: SourcePrefs.isOn(SourcePrefs.cameraKey), cameraID: CameraChoice.selectedID,
                               microphone: SourcePrefs.isOn(SourcePrefs.microphoneKey))
             await syncSystemMeter()
         }
@@ -217,6 +296,36 @@ final class PreviewEngine: ObservableObject {
 }
 
 /// The live camera picture, optionally flipped left to right like a mirror.
+/// A connected camera, as listed in the camera picker.
+struct CameraItem: Identifiable, Equatable {
+    let id: String
+    let name: String
+
+    static func connected() -> [CameraItem] {
+        CameraChoice.connected().map { CameraItem(id: $0.uniqueID, name: $0.localizedName) }
+    }
+}
+
+/// Chooses which camera is recorded. Shown only when there is a choice to make:
+/// more than one camera, or a chosen camera that is no longer connected.
+struct CameraPicker: View {
+    @EnvironmentObject private var previews: PreviewEngine
+    var body: some View {
+        if previews.offersCameraChoice {
+            Picker("Camera", selection: $previews.cameraID) {
+                Text(defaultLabel).tag("")
+                if previews.cameraIsMissing { Text("\(previews.cameraName) (not connected)").tag(previews.cameraID) }
+                ForEach(previews.cameras) { Text($0.name).tag($0.id) }
+            }
+        }
+    }
+
+    private var defaultLabel: String {
+        guard let name = CameraChoice.systemDefault?.localizedName else { return "System Default" }
+        return "System Default (\(name))"
+    }
+}
+
 struct CameraPreviewView: NSViewRepresentable {
     let session: AVCaptureSession
     var mirrored = false
