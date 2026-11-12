@@ -1,0 +1,291 @@
+---
+import { Image, getImage } from 'astro:assets';
+import '../styles/global.css';
+import { featureGroups } from '../data/features';
+import { outputFiles, outputFolder, outputSizeNote, knownLimits } from '../data/outputs';
+
+import recorder from '../assets/screenshots/recorder.png';
+import menu from '../assets/screenshots/menu.png';
+import review from '../assets/screenshots/review.png';
+import hud from '../assets/screenshots/hud.png';
+import appIcon from '../assets/brand/app-icon.png';
+
+const REPO = 'https://github.com/djedi/CaptureDesktop';
+const title = 'CaptureDesktop: a macOS screen recorder that hands off to DaVinci Resolve';
+const description =
+  'CaptureDesktop is a free, open-source screen recorder for macOS. It records screen, camera and audio as separate, synchronised files and builds a DaVinci Resolve project in one click.';
+const canonical = 'https://capturedesk.top/';
+const ogImage = await getImage({ src: recorder, width: 1200, format: 'png' });
+const ogImageUrl = new URL(ogImage.src, Astro.site).href;
+
+const featureImages = {
+  menu: { src: menu, alt: 'CaptureDesktop menu bar panel with switches for screen, camera, microphone and system audio, capture mode and resolution.' },
+  hud: { src: hud, alt: 'Floating recording timer showing elapsed time next to a Stop button.' },
+};
+
+const buildCommands = `git clone ${REPO}.git
+cd CaptureDesktop
+xcodegen generate
+xcodebuild -project CaptureDesktop.xcodeproj -scheme CaptureDesktop -configuration Debug -derivedDataPath build build
+open build/Build/Products/Debug/CaptureDesktop.app`;
+
+const tracks = [
+  { id: 'V3', label: 'Camera', cls: 'clip-camera' },
+  { id: 'V2', label: 'Cursor effects', cls: 'clip-cursor' },
+  { id: 'V1', label: 'Screen', cls: 'clip-screen' },
+  { id: 'A1', label: 'System audio', cls: 'clip-system' },
+  { id: 'A2', label: 'Microphone', cls: 'clip-mic' },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#13151A" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CaptureDesktop" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content="The CaptureDesktop recorder window." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a class="brand" href="#top" aria-label="CaptureDesktop home">
+          <Image src={appIcon} alt="" width={32} height={32} densities={[1, 2]} />
+          <span>CaptureDesktop</span>
+        </a>
+        <nav aria-label="Primary">
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="#resolve">Resolve</a></li>
+            <li><a href="#open-source">Open source</a></li>
+            <li><a class="nav-gh" href={REPO}>GitHub</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="wrap hero-text">
+          <Image class="hero-icon" src={appIcon} alt="CaptureDesktop app icon" width={96} height={96} densities={[1, 2]} loading="eager" />
+          <h1>A screen recorder for macOS that hands your recording to DaVinci Resolve.</h1>
+          <p class="lede">
+            Record your screen, camera and audio as separate, synchronised files, check the result, then open it
+            as a ready-made Resolve project. It is a recorder, not an editor.
+          </p>
+          <div class="ctas">
+            <a class="btn btn-primary" href={REPO}>View on GitHub</a>
+            <a class="btn btn-secondary" href="#build">Build from source</a>
+          </div>
+          <p class="meta">macOS 15 or later · Free and open source · GPL-3.0</p>
+        </div>
+        <div class="wrap">
+          <figure class="shot shot-hero">
+            <Image
+              src={recorder}
+              alt="The CaptureDesktop recorder window: a Video section with Screen and Camera preview cards, an Audio section with microphone and system audio waveforms, and a red Start Recording button."
+              widths={[640, 960, 1280, 1700]}
+              sizes="(max-width: 960px) 100vw, 900px"
+              loading="eager"
+              fetchpriority="high"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="section">
+        <div class="wrap">
+          <h2>How it works</h2>
+          <ol class="steps">
+            <li class="card step">
+              <span class="step-num" aria-hidden="true">1</span>
+              <h3>Record</h3>
+              <p>Choose a display, a window or an area, switch camera, microphone and system audio on or off, and start. A 3-second countdown gives you time to get ready.</p>
+            </li>
+            <li class="card step">
+              <span class="step-num" aria-hidden="true">2</span>
+              <h3>Review</h3>
+              <p>Play the recording back, set the cursor highlight and click ripples, and choose the camera shape, size and corner.</p>
+            </li>
+            <li class="card step">
+              <span class="step-num" aria-hidden="true">3</span>
+              <h3>Edit</h3>
+              <p>One click builds a DaVinci Resolve project with every layer in place. Or export the layers and use any editor.</p>
+            </li>
+          </ol>
+          <figure class="shot shot-review">
+            <Image
+              src={review}
+              alt="The CaptureDesktop review window: a video player previewing cursor effects, a Cursor Effects card, a Camera card, and action buttons including Create DaVinci Resolve Project."
+              widths={[640, 960, 1280, 1800]}
+              sizes="(max-width: 1100px) 100vw, 1040px"
+            />
+            <figcaption>The review window, shown after each recording.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="wrap">
+          <h2>Features</h2>
+          <div class="feature-groups">
+            {featureGroups.map((group) => (
+              <article class={`card feature-group fg-${group.id}`} id={`feature-${group.id}`}>
+                <h3>
+                  {group.title}
+                  {group.note && <span class="badge">{group.note}</span>}
+                </h3>
+                <ul>
+                  {group.items.map((item) => <li>{item}</li>)}
+                </ul>
+                {group.id === 'during' && (
+                  <div class="feature-shots">
+                    <figure class="shot shot-small">
+                      <Image src={featureImages.hud.src} alt={featureImages.hud.alt} widths={[380]} sizes="190px" />
+                      <figcaption>Floating timer</figcaption>
+                    </figure>
+                    <figure class="shot shot-small shot-menu">
+                      <Image src={featureImages.menu.src} alt={featureImages.menu.alt} widths={[320, 640]} sizes="320px" />
+                      <figcaption>Menu bar panel</figcaption>
+                    </figure>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="resolve" class="section">
+        <div class="wrap resolve">
+          <div>
+            <h2>A Resolve project, already laid out</h2>
+            <p>
+              Click <strong>Create DaVinci Resolve Project</strong> in the review window. CaptureDesktop creates a
+              project whose timeline matches the recording's frame rate and resolution, and places each layer on its
+              own track, all starting at the same frame.
+            </p>
+            <p class="callout">
+              Needs <strong>DaVinci Resolve Studio</strong>. The free version of Resolve does not allow external
+              scripting. Without Studio, export the layers as ProRes 4444 and use any editor that supports alpha.
+            </p>
+          </div>
+          <figure class="timeline-fig">
+            <div class="timeline" role="img" aria-label="Illustration of the generated timeline: V3 Camera, V2 Cursor effects, V1 Screen, A1 System audio, A2 Microphone, all starting at the same point.">
+              <div class="ruler" aria-hidden="true"><span>00:00:00:00</span></div>
+              {tracks.map((t) => (
+                <div class="track" aria-hidden="true">
+                  <span class="track-id">{t.id}</span>
+                  <div class="lane">
+                    <div class={`clip ${t.cls}`}>{t.label}</div>
+                  </div>
+                </div>
+              ))}
+              <div class="playhead" aria-hidden="true"></div>
+            </div>
+            <figcaption>Illustration of the generated timeline, not a screenshot of Resolve.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="files" class="section">
+        <div class="wrap">
+          <h2>What you get on disk</h2>
+          <p>{outputFolder}, one per recording:</p>
+          <div class="table-wrap card">
+            <table>
+              <thead><tr><th scope="col">File</th><th scope="col">Contents</th></tr></thead>
+              <tbody>
+                {outputFiles.map((f) => (
+                  <tr><td><code>{f.name}</code></td><td>{f.description}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="note">{outputSizeNote}</p>
+        </div>
+      </section>
+
+      <section id="open-source" class="section">
+        <div class="wrap">
+          <h2>Open source</h2>
+          <div class="card os-card">
+            <ul class="facts">
+              <li><strong>GPL-3.0</strong> licence</li>
+              <li>Written in <strong>Swift</strong></li>
+              <li><strong>macOS</strong> only</li>
+              <li>No account</li>
+              <li>No subscription</li>
+            </ul>
+            <p class="links">
+              <a href={REPO}>Repository</a>
+              <a href={`${REPO}/issues`}>Issues</a>
+              <a href={`${REPO}/blob/main/LICENSE`}>Licence</a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="build" class="section">
+        <div class="wrap">
+          <h2>Build from source</h2>
+          <p>There is no prebuilt download. Build it with Xcode:</p>
+          <div class="build-grid">
+            <div class="card">
+              <h3>Requirements</h3>
+              <ul>
+                <li>macOS 15 or later</li>
+                <li>Xcode</li>
+                <li><a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a></li>
+                <li>For the Resolve handoff only: DaVinci Resolve Studio and the system Python 3</li>
+              </ul>
+            </div>
+            <div class="code card">
+              <pre><code>{buildCommands}</code></pre>
+            </div>
+          </div>
+          <p class="note">On first use, macOS asks for Screen Recording, Camera and Microphone permission.</p>
+        </div>
+      </section>
+
+      <section id="limits" class="section">
+        <div class="wrap">
+          <h2>Known limits</h2>
+          <ul class="limits">
+            {knownLimits.map((l) => <li>{l}</li>)}
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <p>
+          <a href={REPO}>CaptureDesktop on GitHub</a> ·
+          <a href={`${REPO}/blob/main/LICENSE`}>GPL-3.0 licence</a>
+        </p>
+        <p class="tm">
+          DaVinci Resolve is a trademark of Blackmagic Design. CaptureDesktop is not affiliated with or endorsed by
+          Blackmagic Design.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
